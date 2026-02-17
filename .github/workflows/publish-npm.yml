@@ -1,0 +1,44 @@
+name: Publish Node.js SDK to GitHub Packages
+
+on:
+  push:
+    branches: [main, acp]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 0.1.24)'
+        required: false
+        default: '0.1.24'
+
+env:
+  VERSION: ${{ github.event.inputs.version || '0.1.24' }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    defaults:
+      run:
+        working-directory: nodejs
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Set version
+        run: node scripts/set-version.js
+        env:
+          VERSION: ${{ env.VERSION }}
+
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
